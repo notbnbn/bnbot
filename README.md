@@ -1,0 +1,2 @@
+# bnbot
+bnslave
