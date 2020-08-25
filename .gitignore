@@ -4,6 +4,7 @@ bnbot/__pycache__/
 *.py[cod]
 *$py.class
 .vscode/
+bnbot/properties.yml
 
 # C extensions
 *.so
