@@ -53,7 +53,11 @@ async def process_start(msg_channel, game, playerID):
     if game.game_state == Game_State.pregame:
         if gamble.player_in_game(msg_channel.id, playerID):
             game.start_round()
-            await msg_channel.send(f"The dealer has {game.dealer.cards[0]}\nIt is {mention_user(game.get_current_player())}'s turn, you have {player_cards_to_string(msg_channel.id, playerID)}")
+            if not game.dealer.total() == 21:
+                await msg_channel.send(f"The dealer has {game.dealer.cards[0]}\nIt is {mention_user(game.get_current_player())}'s turn, you have {player_cards_to_string(msg_channel.id, playerID)}")
+
+            else:
+                await finish_round(msg_channel, game)
 
         else:
             await msg_channel.send('Game is already started')
@@ -89,14 +93,12 @@ async def finish_round(msg_channel, game):
     
     drawn_str = ""
     if needs_cards: 
+        drawn_str = "The dealer draws "
         drawn = game.dealer.hand()[2:len(game.dealer.hand())]
         for card in drawn:
             drawn_str += str(card) + ', '
-        drawn_str.strip(', ')
-        drawn_str += '\n'
 
     await msg_channel.send(f"{drawn_str}The dealer has {game.dealer.total()}")
-    game.game_state = Game_State.finish
 
 ### Displaying W/L/D in an embed ###
     winners = await playerlist_to_display_names(game.winners)
