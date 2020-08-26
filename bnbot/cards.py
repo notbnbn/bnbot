@@ -9,7 +9,24 @@ class Card:
         self.rank = rank
     
     def __str__(self):
-        return self.rank + ' of ' + self.suit
+        suit_symbol = '?'
+
+        if self.suit == 'S':
+            suit_symbol = '\u2664'
+
+        elif self.suit == 'C':
+            suit_symbol = '\u2667'
+
+        elif self.suit == 'H':
+            suit_symbol = '\u2661'
+
+        elif self.suit == 'D':
+            suit_symbol = '\u2662'
+
+        else:
+            suit_symbol = 'how'
+
+        return self.rank + suit_symbol
 
     def value(self):
         if self.rank.isnumeric():
