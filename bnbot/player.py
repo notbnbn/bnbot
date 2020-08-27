@@ -9,6 +9,13 @@ class Player:
     def hand(self):
         return self.cards
 
+    def hand_string(self, splitter):
+        card_string = ''
+        for card in self.cards:
+            card_string += str(card) + splitter
+        
+        return card_string
+
     def clear_hand(self):
         self.cards.clear()
 
