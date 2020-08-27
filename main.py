@@ -54,13 +54,14 @@ async def process_start(msg_channel, game, playerID):
         if gamble.player_in_game(msg_channel.id, playerID):
             game.start_round()
             if not game.dealer.total() == 21:
-                await msg_channel.send(f"The dealer has {game.dealer.cards[0]}\nIt is {mention_user(game.get_current_player())}'s turn, you have {player_cards_to_string(msg_channel.id, playerID)}")
+                await msg_channel.send(f"The dealer has {game.dealer.cards[0]}\nIt is {mention_user(game.get_current_player())}'s turn, you have {player_cards_to_string(msg_channel.id, game.get_current_player().playerID)}")
+                await display_card_table(msg_channel, game)
 
             else:
                 await finish_round(msg_channel, game)
 
-        else:
-            await msg_channel.send('Game is already started')
+    else:
+        await msg_channel.send('Game is already started')
 
 async def process_hit(msg_channel, game, playerID):
     game.player_hit()
@@ -113,6 +114,16 @@ async def finish_round(msg_channel, game):
     await msg_channel.send(embed=embed)
 
     game.game_state = Game_State.pregame
+
+async def display_card_table(msg_channel, game):
+    embed = discord.Embed(title='Current hands' , color=0xFFFFF)
+    embed.add_field(name='Dealer', value=game.dealer.cards[0], inline=False)
+
+    for player in game.players:
+        embed.add_field(name=client.get_user(player.playerID), value=player.hand_string('\n'), inline=True)
+    embed.remove_field(len(game.players))
+
+    await msg_channel.send(embed=embed)
 
 @client.event
 async def on_ready():
