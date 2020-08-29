@@ -23,12 +23,12 @@ def player_cards_to_string(gameID, playerID):
         cards += str(c) + ', '
     return cards.strip(', ')
 
-async def playerlist_to_display_names(plist):
+async def playerlist_to_display_names(msg_channel, plist):
     liststr = ""
 
     if not len(plist) == 0:
         for player in plist:
-            liststr += str(client.get_user(player.playerID)) + ', '
+            liststr += str(msg_channel.guild.get_member(player.playerID).display_name) + ', '
         return liststr.strip(', ')
 
     else:
@@ -77,7 +77,7 @@ async def process_hit(msg_channel, game, playerID):
             await msg_channel.send(f"You have bust.\nIt is {mention_user(nxt)} 's turn. You have {player_cards_to_string(msg_channel.id, nxt)}")
 
 async def process_stay(msg_channel, game, playerID):
-    await msg_channel.send(f'{client.get_user(playerID).display_name} has {player_cards_to_string(msg_channel.id, playerID)}')
+    await msg_channel.send(f'{msg_channel.guild.get_member(playerID).display_name} has {player_cards_to_string(msg_channel.id, playerID)}')
     game.player_stay()
     nxt = game.get_current_player().playerID
 
@@ -102,9 +102,9 @@ async def finish_round(msg_channel, game):
     await msg_channel.send(f"{drawn_str}The dealer has {game.dealer.total()}")
 
 ### Displaying W/L/D in an embed ###
-    winners = await playerlist_to_display_names(game.winners)
-    losers = await playerlist_to_display_names(game.losers)
-    draws = await playerlist_to_display_names(game.draws)
+    winners = await playerlist_to_display_names(msg_channel, game.winners)
+    losers = await playerlist_to_display_names(msg_channel, game.losers)
+    draws = await playerlist_to_display_names(msg_channel, game.draws)
     
     embed = discord.Embed(title='Hand Over' , color=0xffed66)
     embed.add_field(name="Winners", value=winners, inline=True)
@@ -120,7 +120,7 @@ async def display_card_table(msg_channel, game):
     embed.add_field(name='Dealer', value=game.dealer.cards[0], inline=False)
 
     for player in game.players:
-        embed.add_field(name=client.get_user(player.playerID), value=player.hand_string('\n'), inline=True)
+        embed.add_field(name=msg_channel.guild.get_member(player.playerID).display_name, value=player.hand_string('\n'), inline=True)
     embed.remove_field(len(game.players))
 
     await msg_channel.send(embed=embed)
