@@ -28,8 +28,8 @@ async def playerlist_to_display_names(msg_channel, plist):
 
     if not len(plist) == 0:
         for player in plist:
-            liststr += str(msg_channel.guild.get_member(player.playerID).display_name) + ', '
-        return liststr.strip(', ')
+            liststr += str(msg_channel.guild.get_member(player.playerID).display_name) + '\n'
+        return liststr.strip('\n')
 
     else:
         return 'N/A'
