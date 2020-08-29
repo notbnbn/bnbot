@@ -69,37 +69,37 @@ async def process_hit(msg_channel, game, playerID):
 
     if game.get_player(playerID).total() > 21:
         nxt = game.get_current_player().playerID
+        await msg_channel.send(f"{client.get_user(playerID).display_name} has bust.")
         if game.game_state == Game_State.dealer_turn:
-            await msg_channel.send(f"You have bust.\nIt is the dealer's turn\nThe dealer has {player_cards_to_string(msg_channel.id, 729100329181773836)}")
             await finish_round(msg_channel, game)
 
         else:
-            await msg_channel.send(f"You have bust.\nIt is {mention_user(nxt)} 's turn. You have {player_cards_to_string(msg_channel.id, nxt)}")
+            await msg_channel.send(f"It is {mention_user(nxt)} 's turn. They have {player_cards_to_string(msg_channel.id, nxt)}")
 
 async def process_stay(msg_channel, game, playerID):
-    await msg_channel.send(f'{msg_channel.guild.get_member(playerID).display_name} has {player_cards_to_string(msg_channel.id, playerID)}')
+    await msg_channel.send(f'{msg_channel.guild.get_member(playerID).display_name} stays with {player_cards_to_string(msg_channel.id, playerID)}')
     game.player_stay()
     nxt = game.get_current_player().playerID
 
     if game.game_state == Game_State.dealer_turn:
-        await msg_channel.send(f"It is now the dealer's turn\nThe dealer has {player_cards_to_string(msg_channel.id, 729100329181773836)}")
         await finish_round(msg_channel, game)
 
     else:
-        await msg_channel.send(f"It is {mention_user(nxt)} 's turn. You have {player_cards_to_string(msg_channel.id, nxt)}")
+        await msg_channel.send(f"It is {mention_user(nxt)} 's turn. They have {player_cards_to_string(msg_channel.id, nxt)}")
 
 async def finish_round(msg_channel, game):
     needs_cards = game.dealer.total() < 16
     game.dealer_action()
-    
+    starting_cards = str(game.dealer.cards[0]) + ', ' + str(game.dealer.cards[1])
+
     drawn_str = ""
     if needs_cards: 
-        drawn_str = "The dealer draws "
+        drawn_str = " and draws "
         drawn = game.dealer.hand()[2:len(game.dealer.hand())]
         for card in drawn:
             drawn_str += str(card) + ', '
 
-    await msg_channel.send(f"{drawn_str}The dealer has {game.dealer.total()}")
+    await msg_channel.send(f"It is now the dealer's turn\nThe dealer has {starting_cards}{drawn_str}\nThe dealer has {game.dealer.total()}")
 
 ### Displaying W/L/D in an embed ###
     winners = await playerlist_to_display_names(msg_channel, game.winners)
