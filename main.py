@@ -168,7 +168,7 @@ async def on_message(message):
             else:
                 player_message = 'Players:\n'
                 for player in pls:
-                    memb = message.author.display_name
+                    memb = message.get_guild.get_member(player.PlayerID).display_name
                     player_message += memb + '\n'
 
                 await message.channel.send(player_message)
