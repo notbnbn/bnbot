@@ -159,20 +159,6 @@ async def on_message(message):
             else:
                 await message.channel.send('You are in a game')
 
-        elif msg == 'players':
-            pls = gamble.get_players(channelID)
-
-            if len(pls) == 0:
-                await message.channel.send('No current game')
-
-            else:
-                player_message = 'Players:\n'
-                for player in pls:
-                    memb = message.get_guild.get_member(player.PlayerID).display_name
-                    player_message += memb + '\n'
-
-                await message.channel.send(player_message)
-
         elif msg == 'leave':
             if gamble.player_in_game(channelID, playerID):
                 gamble.leave_game(channelID, playerID)
