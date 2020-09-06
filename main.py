@@ -3,13 +3,15 @@ import bnbot
 from bnbot.cards import Card, Deck
 from bnbot.game import Game, Game_State
 from bnbot.player import Player
-import bnbot.gamble as gamble
 import yaml
+import psycopg2
 
 properties = yaml.load(open('bnbot/properties.yml'), Loader=yaml.FullLoader)
 token = properties.get('token')
 
 client = discord.Client()
+
+currentGames = []
 
 # Converts an ID into an @ 
 def mention_user(userID):
@@ -17,7 +19,7 @@ def mention_user(userID):
 
 def player_cards_to_string(gameID, playerID):
     cards = ''
-    hand = gamble.get_game(gameID).get_player(playerID).hand()
+    hand = get_game(gameID).get_player(playerID).hand()
     
     for c in hand:
         cards += str(c) + ', '
@@ -34,9 +36,61 @@ async def playerlist_to_display_names(msg_channel, plist):
     else:
         return 'N/A'
 
+### Acting on current Games ###
+def create_game(gameID):
+    currentGames.append(Game(gameID))
+
+def get_game(gameID):
+    for game in currentGames:
+        if game.gameID == gameID:
+            return game
+
+    else:
+        return None
+
+def player_in_game(gameID, playerID):
+    if not channel_has_game(gameID):
+        return False
+    
+    else:
+        g = get_game(gameID)
+
+        if not g.get_player(playerID) == None:
+            return g.get_player(playerID) in g.players
+
+        else:
+            return False
+
+def get_players(gameID):
+    if not channel_has_game(gameID):
+        return []
+
+    else:
+        return get_game(gameID).players
+
+def end_game(gameID):
+    if channel_has_game(gameID):
+        currentGames.remove(Game(gameID))
+
+def channel_has_game(gameID):
+    return Game(gameID) in currentGames
+
+def join_game(gameID, playerID):
+    if channel_has_game(gameID):
+            get_game(gameID).add_player(playerID)
+
+    else:
+        create_game(gameID)
+        get_game(gameID).add_player(playerID)
+
+def leave_game(gameID, playerID):
+    if channel_has_game(gameID):
+        get_game(gameID).remove_player(playerID)
+
+### Blackjack Actions ###
 async def blackjack_action(message, channelID, playerID):
     msg = ((message.content.lstrip('bj!')).strip(' ')).casefold()
-    g = gamble.get_game(channelID)
+    g = get_game(channelID)
 
     if msg == 'start':
         await process_start(message.channel, g, playerID)
@@ -51,7 +105,7 @@ async def blackjack_action(message, channelID, playerID):
 
 async def process_start(msg_channel, game, playerID):
     if game.game_state == Game_State.pregame:
-        if gamble.player_in_game(msg_channel.id, playerID):
+        if player_in_game(msg_channel.id, playerID):
             game.start_round()
             if not game.dealer.total() == 21:
                 await msg_channel.send(f"The dealer has {game.dealer.cards[0]}\nIt is {mention_user(game.get_current_player())}'s turn, you have {player_cards_to_string(msg_channel.id, game.get_current_player().playerID)}")
@@ -148,20 +202,20 @@ async def on_message(message):
         playerID = message.author.id
 
         if msg == 'cheat' and message.author.id == 83794466820849664:
-            await message.channel.send(gamble.get_game(channelID).deck.next())
+            await message.channel.send(get_game(channelID).deck.next())
 
         ## Player to game ##
         elif msg == 'join':
-            if not gamble.player_in_game(channelID, playerID):
-                gamble.join_game(channelID, playerID)
+            if not player_in_game(channelID, playerID):
+                join_game(channelID, playerID)
                 await message.channel.send('Joined game')
 
             else:
                 await message.channel.send('You are in a game')
 
         elif msg == 'leave':
-            if gamble.player_in_game(channelID, playerID):
-                gamble.leave_game(channelID, playerID)
+            if player_in_game(channelID, playerID):
+                leave_game(channelID, playerID)
                 await message.channel.send('Left game')
 
             else:
@@ -169,14 +223,14 @@ async def on_message(message):
 
         ## Debug ##
         elif msg == 'ingame':
-            if gamble.channel_has_game(channelID) and gamble.player_in_game(channelID, playerID):
+            if channel_has_game(channelID) and player_in_game(channelID, playerID):
                 await message.channel.send('Ye')
 
             else:
                 await message.channel.send('Ne')
         
         elif msg == 'hasgame':
-            await message.channel.send(gamble.channel_has_game(channelID))
+            await message.channel.send(channel_has_game(channelID))
 
         elif msg == 'help':
             await message.channel.send('contact <@83794466820849664>')
@@ -188,7 +242,7 @@ async def on_message(message):
         channelID = message.channel.id
         playerID = message.author.id
         
-        if gamble.channel_has_game(channelID) and gamble.player_in_game(channelID, playerID):
+        if channel_has_game(channelID) and player_in_game(channelID, playerID):
             await blackjack_action(message, channelID, playerID)
 
         else:
