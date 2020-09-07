@@ -15,16 +15,16 @@ currentGames = []
 # Connection to postgresql #
 pg_prop = properties.get('postgres')
 try:    
-    connection = psycopg2.connect(dbname = pg_prop.get('dbname'),
+    conn = psycopg2.connect(dbname = pg_prop.get('dbname'),
                                   user = pg_prop.get('user'),
                                   password = pg_prop.get('password'),
                                   host = pg_prop.get('host'),
                                   port = pg_prop.get('port'),
                                   cursor_factory=psycopg2.extras.RealDictCursor)
-    connection.autocommit = True
+    conn.autocommit = True
 
     # Print PostgreSQL Connection properties
-    print (connection.get_dsn_parameters(),"\n")
+    print (conn.get_dsn_parameters(),"\n")
 
 except (Exception, psycopg2.Error) as error :
     print ("Error while connecting to PostgreSQL", error)
@@ -200,7 +200,7 @@ async def display_card_table(msg_channel, game):
 
 ### Currency Actions ###
 def check_for_user(playerID):
-    with connection.cursor() as cur:
+    with conn.cursor() as cur:
         cur.execute('SELECT %(playerID)s FROM players', {'playerID':playerID})
         if not cur.rowcount == 0:
             return True
@@ -213,7 +213,7 @@ def check_for_user(playerID):
             return False
 
 def get_balance(playerID):
-    with connection.cursor() as cur:
+    with conn.cursor() as cur:
         cur.execute('SELECT * FROM players WHERE playerid = %(playerID)s', {'playerID':playerID})
         return cur.fetchone()['money']
 
