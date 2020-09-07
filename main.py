@@ -5,12 +5,29 @@ from bnbot.game import Game, Game_State
 from bnbot.player import Player
 import yaml
 import psycopg2
+import psycopg2.extras
 
 properties = yaml.load(open('bnbot/properties.yml'), Loader=yaml.FullLoader)
 token = properties.get('token')
 client = discord.Client()
-
 currentGames = []
+
+# Connection to postgresql #
+pg_prop = properties.get('postgres')
+try:    
+    connection = psycopg2.connect(dbname = pg_prop.get('dbname'),
+                                  user = pg_prop.get('user'),
+                                  password = pg_prop.get('password'),
+                                  host = pg_prop.get('host'),
+                                  port = pg_prop.get('port'),
+                                  cursor_factory=psycopg2.extras.RealDictCursor)
+    connection.autocommit = True
+
+    # Print PostgreSQL Connection properties
+    print (connection.get_dsn_parameters(),"\n")
+
+except (Exception, psycopg2.Error) as error :
+    print ("Error while connecting to PostgreSQL", error)
 
 # Converts an ID into an @ 
 def mention_user(userID):
@@ -181,6 +198,25 @@ async def display_card_table(msg_channel, game):
 
     await msg_channel.send(embed=embed)
 
+### Currency Actions ###
+def check_for_user(playerID):
+    with connection.cursor() as cur:
+        cur.execute('SELECT %(playerID)s FROM players', {'playerID':playerID})
+        if not cur.rowcount == 0:
+            return True
+
+        else:
+            cur.execute("""
+            INSERT INTO players (playerID, money)
+            VALUES(%(playerID)s, 0)
+            """, {'playerID':playerID})
+            return False
+
+def get_balance(playerID):
+    with connection.cursor() as cur:
+        cur.execute('SELECT * FROM players WHERE playerid = %(playerID)s', {'playerID':playerID})
+        return cur.fetchone()['money']
+
 @client.event
 async def on_ready():
     print('We have logged in as {0.user}'.format(client))
@@ -235,6 +271,14 @@ async def on_message(message):
 
             else:
                 await message.channel.send('You are not in a game')
+
+        ## Player to money ##
+        elif msg == 'bal':
+            if check_for_user(playerID):
+                await message.channel.send(f'You have {get_balance(playerID)}')
+
+            else:
+                await message.channel.send('User created, you have 0 Dollars.\nType b. ubi for money')
 
         ## Debug ##
         elif msg == 'ingame':
