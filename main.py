@@ -8,7 +8,6 @@ import psycopg2
 
 properties = yaml.load(open('bnbot/properties.yml'), Loader=yaml.FullLoader)
 token = properties.get('token')
-
 client = discord.Client()
 
 currentGames = []
@@ -86,6 +85,9 @@ def join_game(gameID, playerID):
 def leave_game(gameID, playerID):
     if channel_has_game(gameID):
         get_game(gameID).remove_player(playerID)
+
+    if get_players(gameID) == []:
+        end_game(gameID)
 
 ### Blackjack Actions ###
 async def blackjack_action(message, channelID, playerID):
@@ -216,7 +218,12 @@ async def on_message(message):
         elif msg == 'leave':
             if player_in_game(channelID, playerID):
                 leave_game(channelID, playerID)
-                await message.channel.send('Left game')
+
+                if not channel_has_game(channelID):
+                    await message.channel.send('Game left and ended')
+
+                else:
+                    await message.channel.send(f'{message.author.display_name} Left game')
 
             else:
                 await message.channel.send('You are not in a game')
