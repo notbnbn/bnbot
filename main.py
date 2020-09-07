@@ -24,7 +24,7 @@ try:
     conn.autocommit = True
 
     # Print PostgreSQL Connection properties
-    print (conn.get_dsn_parameters(),"\n")
+    print (f'Connected to {conn.get_dsn_parameters()["dbname"]}')
 
 except (Exception, psycopg2.Error) as error :
     print ("Error while connecting to PostgreSQL", error)
@@ -201,21 +201,41 @@ async def display_card_table(msg_channel, game):
 ### Currency Actions ###
 def check_for_user(playerID):
     with conn.cursor() as cur:
-        cur.execute('SELECT %(playerID)s FROM players', {'playerID':playerID})
+        cur.execute("""
+        SELECT * FROM players 
+        WHERE playerid = %(playerID)s
+        """, {'playerID':playerID})
         if not cur.rowcount == 0:
             return True
 
         else:
             cur.execute("""
-            INSERT INTO players (playerID, money)
-            VALUES(%(playerID)s, 0)
+            INSERT INTO players (playerid, money)
+            VALUES(%(playerID)s, 1000)
             """, {'playerID':playerID})
             return False
 
 def get_balance(playerID):
     with conn.cursor() as cur:
+        cur.execute("""
+        SELECT * FROM players 
+        WHERE playerid = %(playerID)s
+        """, {'playerID':playerID})
+
+        currow = cur.fetchone()
+        print(currow)
+        return currow['money']
+
+def adjust_balance(playerID, amount):
+    with conn.cursor() as cur:
         cur.execute('SELECT * FROM players WHERE playerid = %(playerID)s', {'playerID':playerID})
-        return cur.fetchone()['money']
+        bal = cur.fetchone()['money']
+        newbal = bal + amount
+        cur.execute("""
+        UPDATE players
+        SET money = %(newbal)s
+        WHERE playerid = %(playerID)s
+        """, {'newbal':newbal, 'playerID':playerID})
 
 @client.event
 async def on_ready():
@@ -278,7 +298,19 @@ async def on_message(message):
                 await message.channel.send(f'You have {get_balance(playerID)}')
 
             else:
-                await message.channel.send('User created, you have 0 Dollars.\nType b. ubi for money')
+                await message.channel.send('User created, you have benn given 1000 Dollars.')
+
+        elif msg == 'ubi':
+            if check_for_user(playerID):
+                if get_balance(playerID) < 1000:
+                    adjust_balance(playerID, 1000)
+                    await message.channel.send('You have been given 1000 Dollars. Commie.')
+
+                else:
+                    await message.channel.send('You have too much money to recieve ubi')    
+
+            else:
+                await message.channel.send('User created, you have been given 1000 Dollars.')
 
         ## Debug ##
         elif msg == 'ingame':
