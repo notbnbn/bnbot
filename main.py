@@ -91,7 +91,7 @@ def leave_game(gameID, playerID):
 
 ### Blackjack Actions ###
 async def blackjack_action(message, channelID, playerID):
-    msg = ((message.content.lstrip('bj!')).strip(' ')).casefold()
+    msg = ((message.content.lstrip('b.')).strip(' ')).casefold()
     g = get_game(channelID)
 
     if msg == 'start':
@@ -185,6 +185,8 @@ async def display_card_table(msg_channel, game):
 async def on_ready():
     print('We have logged in as {0.user}'.format(client))
 
+bj_commands = ['start','hit','stay']
+
 @client.event
 async def on_message(message):
     if message.author == client.user:
@@ -196,15 +198,21 @@ async def on_message(message):
     if message.content.startswith('whome'):
         await message.channel.send(mention_user(message.author.id))
 
-    ##### Gambling Commands #####
-    if message.content.startswith('bn!'):
-        # Take off bn! and make lowercase
-        msg = ((message.content.lstrip('bn!')).strip(' ')).casefold()
+    ### Gambling Commands ###
+    if message.content.startswith('b.'):
+        msg = ((message.content.lstrip('b.')).strip(' ')).casefold()
         channelID = message.channel.id
         playerID = message.author.id
 
         if msg == 'cheat' and message.author.id == 83794466820849664:
             await message.channel.send(get_game(channelID).deck.next())
+
+        elif msg in bj_commands:
+            if channel_has_game(channelID) and player_in_game(channelID, playerID):
+                await blackjack_action(message, channelID, playerID)
+
+            else:
+                await message.channel.send("Game is either not in progress or you are not in it.")
 
         ## Player to game ##
         elif msg == 'join':
@@ -241,18 +249,8 @@ async def on_message(message):
 
         elif msg == 'help':
             await message.channel.send('contact <@83794466820849664>')
-
+        
         else:
             await message.channel.send('Invalid command')
-
-    if message.content.startswith('bj!'):
-        channelID = message.channel.id
-        playerID = message.author.id
-        
-        if channel_has_game(channelID) and player_in_game(channelID, playerID):
-            await blackjack_action(message, channelID, playerID)
-
-        else:
-            await message.channel.send("Game is either not in progress or you are not in it.")
 
 client.run(token)
