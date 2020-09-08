@@ -222,9 +222,7 @@ def get_balance(playerID):
         WHERE playerid = %(playerID)s
         """, {'playerID':playerID})
 
-        currow = cur.fetchone()
-        print(currow)
-        return currow['money']
+        return cur.fetchone()['money']
 
 def adjust_balance(playerID, amount):
     with conn.cursor() as cur:
@@ -298,7 +296,7 @@ async def on_message(message):
                 await message.channel.send(f'You have {get_balance(playerID)}')
 
             else:
-                await message.channel.send('User created, you have benn given 1000 Dollars.')
+                await message.channel.send('User created, you have been given 1000 Dollars.')
 
         elif msg == 'ubi':
             if check_for_user(playerID):
