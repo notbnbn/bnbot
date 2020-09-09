@@ -29,6 +29,7 @@ try:
 except (Exception, psycopg2.Error) as error :
     print ("Error while connecting to PostgreSQL", error)
 
+### General Helpers ###
 # Converts an ID into an @ 
 def mention_user(userID):
     return '<@' + str(userID) + '>'
@@ -199,6 +200,15 @@ async def display_card_table(msg_channel, game):
     await msg_channel.send(embed=embed)
 
 ### Currency Actions ###
+def create_user(playerID):
+    if not check_for_user(playerID):
+        with conn.cursor() as cur:
+            cur.execute("""
+            INSERT INTO players (playerid, money)
+            VALUES(%(playerID)s, 1000)
+            """, {'playerID':playerID})
+            return True
+
 def check_for_user(playerID):
     with conn.cursor() as cur:
         cur.execute("""
@@ -209,10 +219,6 @@ def check_for_user(playerID):
             return True
 
         else:
-            cur.execute("""
-            INSERT INTO players (playerid, money)
-            VALUES(%(playerID)s, 1000)
-            """, {'playerID':playerID})
             return False
 
 def get_balance(playerID):
@@ -235,6 +241,35 @@ def adjust_balance(playerID, amount):
         WHERE playerid = %(playerID)s
         """, {'newbal':newbal, 'playerID':playerID})
 
+def exchange_money(payer, payee, amount):
+    adjust_balance(payer, -amount)
+    adjust_balance(payee, amount)
+
+async def process_pay(message):
+    payer = message.author.id
+    bal = get_balance(payer)
+    
+    try:
+        payee = message.mentions[0].id
+        amount = int(message.content.split(" ")[3])
+    except ValueError:
+        await message.channel.send("Not a valid amount")
+        return
+    except IndexError:
+        await message.channel.send("Missing amount or payee")
+        return
+
+    if not check_for_user(payee):
+        await message.channel.send("User does not exist in the bank, tell them to type `b. ubi`")
+        return
+
+    elif bal < 10000 or bal < amount:
+        await message.channel.send("You either do not have enough to pay or have less than 10,000")
+        return 
+
+    exchange_money(payer, payee, amount)
+    await message.channel.send("heehoo transaction compwete mista uwu~~~~")
+
 @client.event
 async def on_ready():
     print('We have logged in as {0.user}'.format(client))
@@ -254,7 +289,8 @@ async def on_message(message):
 
     ### Gambling Commands ###
     if message.content.startswith('b.'):
-        msg = ((message.content.lstrip('b.')).strip(' ')).casefold()
+        # msg = ((message.content.lstrip('b.')).strip(' ')).casefold()
+        msg = message.content.split(" ")[1]
         channelID = message.channel.id
         playerID = message.author.id
 
@@ -296,19 +332,25 @@ async def on_message(message):
                 await message.channel.send(f'You have {get_balance(playerID)}')
 
             else:
+                create_user(playerID)
                 await message.channel.send('User created, you have been given 1000 Dollars.')
 
         elif msg == 'ubi':
             if check_for_user(playerID):
-                if get_balance(playerID) < 1000:
-                    adjust_balance(playerID, 1000)
-                    await message.channel.send('You have been given 1000 Dollars. Commie.')
+                if get_balance(playerID) < 100:
+                    adjust_balance(playerID, 100)
+                    await message.channel.send('You have been given 100 Dollars. Commie.')
 
                 else:
                     await message.channel.send('You have too much money to recieve ubi')    
 
             else:
+                create_user(playerID)
                 await message.channel.send('User created, you have been given 1000 Dollars.')
+
+        # b. pay (user to be paid) (amount to be paid)
+        elif msg == 'pay':
+            await process_pay(message)
 
         ## Debug ##
         elif msg == 'ingame':
