@@ -251,7 +251,7 @@ async def process_pay(message):
     
     try:
         payee = message.mentions[0].id
-        amount = int(message.content.split(" ")[2])
+        amount = int(message.content.split(" ")[3])
     except ValueError:
         await message.channel.send("Not a valid amount")
         return
@@ -289,8 +289,11 @@ async def on_message(message):
 
     ### Gambling Commands ###
     if message.content.startswith('b.'):
-        msg = (message.content.lstrip('b.')).casefold()
-        msg = msg.split(" ")[0]
+        if not message.content[2] == ' ':
+            await message.channel.send('Seperate b. and your command with a space')
+            return
+
+        msg = message.content.split(" ")[1]
         channelID = message.channel.id
         playerID = message.author.id
 
