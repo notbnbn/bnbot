@@ -42,6 +42,9 @@ def player_cards_to_string(gameID, playerID):
         cards += str(c) + ', '
     return cards.strip(', ')
 
+def get_display_name(msg_channel, playerID):
+    return msg_channel.guild.get_member(playerID).display_name
+
 async def playerlist_to_display_names(msg_channel, plist):
     liststr = ""
 
@@ -251,7 +254,7 @@ async def process_pay(message):
     
     try:
         payee = message.mentions[0].id
-        amount = int(message.content.split(" ")[3])
+        amount = int((message.content.lstrip('b.')).split()[2])
     except ValueError:
         await message.channel.send("Not a valid amount")
         return
@@ -268,7 +271,11 @@ async def process_pay(message):
         return 
 
     exchange_money(payer, payee, amount)
-    await message.channel.send("heehoo transaction compwete mista uwu~~~~")
+    embed = discord.Embed(title='bnbank' , color=0x008c15)
+    embdmsg = f'{get_display_name(message.channel, payer)} : {get_balance(payer)}\n{get_display_name(message.channel, payee)} : {get_balance(payee)}'
+    embed.add_field(name='Balances', value=embdmsg)
+    embed.set_footer(text="uwu")
+    await message.channel.send(embed=embed)
 
 @client.event
 async def on_ready():
@@ -289,11 +296,8 @@ async def on_message(message):
 
     ### Gambling Commands ###
     if message.content.startswith('b.'):
-        if not message.content[2] == ' ':
-            await message.channel.send('Seperate b. and your command with a space')
-            return
-
-        msg = message.content.split(" ")[1]
+        msg = message.content.lstrip('b.')
+        msg = msg.split()[0]
         channelID = message.channel.id
         playerID = message.author.id
 
