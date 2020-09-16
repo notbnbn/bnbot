@@ -37,7 +37,7 @@ def mention_user(userID):
 def player_cards_to_string(gameID, playerID):
     cards = ''
     hand = get_game(gameID).get_player(playerID).hand()
-    
+
     for c in hand:
         cards += str(c) + ', '
     return cards.strip(', ')
@@ -71,7 +71,7 @@ def get_game(gameID):
 def player_in_game(gameID, playerID):
     if not channel_has_game(gameID):
         return False
-    
+
     else:
         g = get_game(gameID)
 
@@ -271,10 +271,13 @@ async def process_pay(message):
         return 
 
     exchange_money(payer, payee, amount)
-    embed = discord.Embed(title='bnbank' , color=0x008c15)
-    embdmsg = f'{get_display_name(message.channel, payer)} : {get_balance(payer)}\n{get_display_name(message.channel, payee)} : {get_balance(payee)}'
-    embed.add_field(name='Balances', value=embdmsg)
-    embed.set_footer(text="uwu")
+
+    embed = discord.Embed(title='₽ *bnbank* ₽' , color=0x008c15)
+    embedplayers = f'\n**{get_display_name(message.channel, payer)}**\n**{get_display_name(message.channel, payee)}**'
+    embedamounts = f'{get_balance(payer)}\n{get_balance(payee)}'
+    embed.add_field(name='Account', value=embedplayers, inline=True)
+    embed.add_field(name='₽', value=embedamounts, inline=True)
+    embed.set_footer(text=f"Transaction amount: ₽ {amount}")
     await message.channel.send(embed=embed)
 
 @client.event
