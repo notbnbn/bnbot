@@ -207,7 +207,7 @@ def create_user(playerID):
     if not check_for_user(playerID):
         with conn.cursor() as cur:
             cur.execute("""
-            INSERT INTO players (playerid, money)
+            INSERT INTO player (playerid, money)
             VALUES(%(playerID)s, 1000)
             """, {'playerID':playerID})
             return True
@@ -215,7 +215,7 @@ def create_user(playerID):
 def check_for_user(playerID):
     with conn.cursor() as cur:
         cur.execute("""
-        SELECT * FROM players 
+        SELECT * FROM player 
         WHERE playerid = %(playerID)s
         """, {'playerID':playerID})
         if not cur.rowcount == 0:
@@ -227,7 +227,7 @@ def check_for_user(playerID):
 def get_balance(playerID):
     with conn.cursor() as cur:
         cur.execute("""
-        SELECT * FROM players 
+        SELECT * FROM player 
         WHERE playerid = %(playerID)s
         """, {'playerID':playerID})
 
@@ -235,11 +235,11 @@ def get_balance(playerID):
 
 def adjust_balance(playerID, amount):
     with conn.cursor() as cur:
-        cur.execute('SELECT * FROM players WHERE playerid = %(playerID)s', {'playerID':playerID})
+        cur.execute('SELECT * FROM player WHERE playerid = %(playerID)s', {'playerID':playerID})
         bal = cur.fetchone()['money']
         newbal = bal + amount
         cur.execute("""
-        UPDATE players
+        UPDATE player
         SET money = %(newbal)s
         WHERE playerid = %(playerID)s
         """, {'newbal':newbal, 'playerID':playerID})
