@@ -45,13 +45,6 @@ class Card:
         else:
             return 10
 
-def cards_to_string(card_list, splitter):
-    card_string = ''
-    for card in card_list:
-        card_string += str(card) + splitter
-
-    return card_string
-
 def remove_cards(cards_in_play):
     cdeck = [Card(s, r) for r in rank for s in suit]
     if not len(cards_in_play) == 0:
@@ -68,35 +61,6 @@ def deal(cards_in_play):
 
     else:
         return None
-
-class Deck:
-    def __init__(self):
-        self.x = 0
-        self.contents = [Card(s, r) for r in rank for s in suit]
-        random.shuffle(self.contents)
-
-    # Returns card currently at top of deck
-    def deal(self):
-        if self.x == len(self.contents):
-            return 'End of deck'
-
-        else:
-            self.x += 1
-            return self.contents[self.x - 1]
-
-    # Discards current deck and creates a new one
-    def new(self):
-        self.x = 0
-        self.contents = [Card(s, r) for r in rank for s in suit]
-        random.shuffle(self.contents)
-        
-    # Shows card in position passed
-    def show(self, cardPOS):
-        return self.contents[cardPOS].__str__()
-
-    # Shows next card
-    def next(self):
-        return self.contents[self.x].__str__()
 
 # awk made you do this, cry at later date
 # everything is fixed, thanks awk
