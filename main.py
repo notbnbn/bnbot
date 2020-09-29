@@ -10,7 +10,9 @@ import random
 
 properties = yaml.load(open('bnbot/properties.yml'), Loader=yaml.FullLoader)
 token = properties.get('token')
-client = discord.Client()
+intents = discord.Intents.default()
+intents.members = True
+client = discord.Client(intents=intents)
 dealerID = 0
 
 # Connection to postgresql #
