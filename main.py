@@ -1,9 +1,7 @@
 import discord
 import bnbot
 import bnbot.cards as cards
-from bnbot.cards import Card, Deck
-from bnbot.game import Game, Game_State
-from bnbot.player import Player
+from bnbot.cards import Card
 import bnbot.schema as sql
 import yaml
 import psycopg2
@@ -277,7 +275,22 @@ async def process_bet(msg_channel, gameID, playerID, amount):
         await msg_channel.send(f'**Bet Placed**: ₽{amount}')
 
 def process_payout(gameID):
-    return
+    with conn.cursor() as cur:
+        cur.execute(sql.get_result_bet, {'result':'W', 'gameid':gameID})
+        winners = {}
+        for row in cur:
+            winners[row['playerid']] = row['amount']
+
+        cur.execute(sql.get_result_bet, {'result':'D', 'gameid':gameID})
+        draws = {}
+        for row in cur:
+            draws[row['playerid']] = row['amount']
+
+        for player in winners:
+            adjust_balance(player, winners[player] * 2)
+
+        for player in draws:
+            adjust_balance(player, draws[player])
 
 def process_winloss(gameID):
     global dealerID
@@ -392,6 +405,7 @@ async def finish_round(msg_channel, gameID):
     embed.set_footer(text="sampletext.txt")
     await msg_channel.send(embed=embed)
 
+    process_payout(gameID)
     set_current_turn(gameID, 0)
     update_game_state(gameID, 'pregame')
 

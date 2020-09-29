@@ -142,3 +142,8 @@ UPDATE player_game
 SET result = %(result)s
 WHERE playerid = %(playerid)s
 """
+
+get_result_bet="""
+SELECT playerid,amount FROM player_game
+WHERE result = %(result)s AND gameid = %(gameid)s
+"""
