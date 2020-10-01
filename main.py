@@ -166,7 +166,7 @@ def update_game_state(gameID, game_state):
     with conn.cursor() as cur:
         cur.execute(sql.update_game_state, {'game_state':game_state, 'gameid':gameID})
 
-def join_game(gameID, playerID):
+def join_game(gameID, playerID, amount=0):
     pgID = f"{playerID}:{gameID}"
     with conn.cursor() as cur:
         cur.execute(sql.get_next_turn, {'gameid':gameID})
@@ -177,7 +177,7 @@ def join_game(gameID, playerID):
         else:
             pturn = 1
 
-        cur.execute(sql.add_pgid, {'playerid':playerID, 'gameid':gameID, 'pgid':pgID, 'turn_pos':pturn})
+        cur.execute(sql.add_pgid, {'playerid':playerID, 'gameid':gameID, 'pgid':pgID, 'turn_pos':pturn, 'amount':amount})
         cur.execute(sql.check_for_game, {'gameid':gameID})
         if cur.rowcount == 0:
             cur.execute(sql.create_game, {'gameid':gameID})
@@ -271,10 +271,16 @@ async def process_bet(msg_channel, gameID, playerID, amount):
         await msg_channel.send('You do not have enough money for that bet')
         return
 
+    pgid = f'{playerID}:{gameID}'
     with conn.cursor() as cur:
-        cur.execute(sql.add_bet, {'pgid':f'{playerID}:{gameID}', 'amount':amount})
-        adjust_balance(playerID, -amount)
-        await msg_channel.send(f'**Bet Placed**: ₽{amount}')
+        current_bet = cur.execute(sql.get_player_bet, {'pgid':pgid})
+        if current_bet == 0:
+            cur.execute(sql.add_bet, {'pgid':pgid, 'amount':amount})
+            adjust_balance(playerID, -amount)
+            await msg_channel.send(f'**Bet Placed**: ₽{amount}')
+
+        else:
+            await msg_channel.send(f'You already have a bet of ₽{current_bet}')
 
 def process_payout(gameID):
     with conn.cursor() as cur:

@@ -5,8 +5,8 @@ WHERE gameid = %(gameid)s
 """
 
 add_pgid="""
-INSERT INTO player_game(playerid,gameid,pgid,turn_pos)
-VALUES(%(playerid)s,%(gameid)s,%(pgid)s,%(turn_pos)s)
+INSERT INTO player_game(playerid,gameid,pgid,turn_pos,amount)
+VALUES(%(playerid)s,%(gameid)s,%(pgid)s,%(turn_pos)s,%(amount)s)
 """
 
 remove_pgid="""
@@ -146,4 +146,9 @@ WHERE playerid = %(playerid)s
 get_result_bet="""
 SELECT playerid,amount FROM player_game
 WHERE result = %(result)s AND gameid = %(gameid)s
+"""
+
+get_player_bet="""
+SELECT amount FROM player_game
+WHERE pgid = %(pgid)s
 """
