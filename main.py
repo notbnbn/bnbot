@@ -417,9 +417,9 @@ async def display_card_table(msg_channel):
     embed.add_field(name='Dealer', value=get_player_cards(msg_channel.id, dealerID)[0], inline=False)
 
     p_in_g = get_game_players(msg_channel.id)
+    p_in_g.remove(dealerID)
     for player in p_in_g:
         embed.add_field(name=get_display_name(msg_channel, player), value=cards_to_string(get_player_cards(msg_channel.id, player), '\n'), inline=True)
-    embed.remove_field(len(p_in_g))
 
     await msg_channel.send(embed=embed)
 
