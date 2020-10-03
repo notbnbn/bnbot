@@ -1,7 +1,7 @@
 import random
 
 suit = ['S', 'C', 'H', 'D']
-rank = ['A', '2', '3', '4', '5', '6', '7', '8', '9', '10', 'J', 'Q', 'K']
+rank = ['A', '2', '3', '4', '5', '6', '7', '8', '9', '10', 'J', 'Q', 'K', 'G']
 
 class Card:
     def __init__(self, suit, rank):
@@ -21,6 +21,9 @@ class Card:
             suit_symbol = '\u2661'
 
         elif self.suit == 'D':
+            suit_symbol = '\u2662'
+			
+        elif self.suit == 'G':
             suit_symbol = '\u2662'
 
         else:
