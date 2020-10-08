@@ -389,10 +389,11 @@ async def process_start(msg_channel):
     await display_card_table(msg_channel)
     # Get dealer amount check for 21. If dealer has 21 then end game
     if get_player_total(msg_channel.id, dealerID) == 21:
-        return  # Go to finish game
+        return finish_round(msg_channel, msg_channel.id)
 
-    current_player = get_current_playerID(msg_channel.id)
-    await msg_channel.send(f"It is {mention_user(current_player)}'s turn. You \
+    else:
+        current_player = get_current_playerID(msg_channel.id)
+        await msg_channel.send(f"It is {mention_user(current_player)}'s turn. You \
         have {player_cards_to_string(msg_channel.id, current_player, ' ')}")
 
 
