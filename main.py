@@ -1,5 +1,4 @@
 import discord
-import bnbot
 import bnbot.cards as cards
 from bnbot.cards import Card
 import bnbot.schema as sql
@@ -17,25 +16,27 @@ dealerID = 0
 
 # Connection to postgresql #
 pg_prop = properties.get('postgres')
-try:    
-    conn = psycopg2.connect(dbname = pg_prop.get('dbname'),
-                                  user = pg_prop.get('user'),
-                                  password = pg_prop.get('password'),
-                                  host = pg_prop.get('host'),
-                                  port = pg_prop.get('port'),
-                                  cursor_factory=psycopg2.extras.RealDictCursor)
+try:
+    conn = psycopg2.connect(dbname=pg_prop.get('dbname'),
+                            user=pg_prop.get('user'),
+                            password=pg_prop.get('password'),
+                            host=pg_prop.get('host'),
+                            port=pg_prop.get('port'),
+                            cursor_factory=psycopg2.extras.RealDictCursor)
     conn.autocommit = True
 
     # Print PostgreSQL Connection properties
-    print (f'Connected to {conn.get_dsn_parameters()["dbname"]}')
+    print(f'Connected to {conn.get_dsn_parameters()["dbname"]}')
 
-except (Exception, psycopg2.Error) as error :
-    print ("Error while connecting to PostgreSQL", error)
+except (Exception, psycopg2.Error) as error:
+    print("Error while connecting to PostgreSQL", error)
 
-### General Helpers ###
-# Converts an ID into an @ 
+
+# General Helpers ###
+# Converts an ID into an @
 def mention_user(userID):
     return '<@' + str(userID) + '>'
+
 
 def cards_to_string(card_list, splitter):
     card_string = ''
@@ -44,98 +45,112 @@ def cards_to_string(card_list, splitter):
 
     return card_string
 
+
 def player_cards_to_string(gameID, playerID, splitter):
     return cards_to_string(get_player_cards(gameID, playerID), splitter)
 
+
 def get_display_name(msg_channel, playerID):
     return msg_channel.guild.get_member(playerID).display_name
+
 
 async def playerlist_to_display_names(msg_channel, plist):
     liststr = ""
 
     if not len(plist) == 0:
         for player in plist:
-            liststr += str(msg_channel.guild.get_member(player).display_name) + '\n'
+            liststr += str(msg_channel.guild.get_member(player).display_name)\
+                + '\n'
         return liststr.strip('\n')
 
     else:
         return 'N/A'
 
-### Acting on current Games ###
+
+# Acting on current Games
 def get_game_players(gameID):
     with conn.cursor() as cur:
-        cur.execute(sql.get_game_players, {'gameid':gameID})
+        cur.execute(sql.get_game_players, {'gameid': gameID})
         plist = []
         for row in cur:
             plist.append(row['playerid'])
         return plist
 
+
 def player_in_game(gameID, playerID):
     pgID = f"{playerID}:{gameID}"
     with conn.cursor() as cur:
-        cur.execute(sql.check_for_pgid, {'pgid':pgID})
+        cur.execute(sql.check_for_pgid, {'pgid': pgID})
         if not cur.rowcount == 0:
             return True
 
         else:
             return False
 
+
 def get_players(gameID):
     with conn.cursor() as cur:
-        cur.execute(sql.get_game_players, {'gameid':gameID})
+        cur.execute(sql.get_game_players, {'gameid': gameID})
         plistdict = cur.fetchall()
         result = []
         for pdict in plistdict:
             result.append(pdict['playerid'])
         return result
 
+
 def get_pgid(gameID, playerID):
     with conn.cursor() as cur:
-        cur.execute(sql.get_pgid, {'pgid':f'{playerID}:{gameID}'})
+        cur.execute(sql.get_pgid, {'pgid': f'{playerID}:{gameID}'})
         return cur.fetchone()
+
 
 def get_current_turn(gameID):
     with conn.cursor() as cur:
-        cur.execute(sql.get_game, {'gameid':gameID})
+        cur.execute(sql.get_game, {'gameid': gameID})
         return cur.fetchone()['current_player']
+
 
 def get_current_playerID(gameID):
     with conn.cursor() as cur:
         current_turn = get_current_turn(gameID)
-        cur.execute(sql.get_game_players, {'gameid':gameID})
+        cur.execute(sql.get_game_players, {'gameid': gameID})
         for row in cur:
             if row['turn_pos'] == current_turn:
                 return row['playerid']
 
+
 def set_current_turn(gameID, turn):
     with conn.cursor() as cur:
-        cur.execute(sql.set_turn, {'new_turn':turn, 'gameid':gameID})
+        cur.execute(sql.set_turn, {'new_turn': turn, 'gameid': gameID})
+
 
 def progress_turn(gameID):
     with conn.cursor() as cur:
-        cur.execute(sql.get_current_turn, {'gameid':gameID})
+        cur.execute(sql.get_current_turn, {'gameid': gameID})
         current_turn = cur.fetchone()['current_player']
-        cur.execute(sql.get_turn_list, {'gameid':gameID})
+        cur.execute(sql.get_turn_list, {'gameid': gameID})
         new_turn = 0
         for row in cur:
             if row['turn_pos'] == current_turn:
-              new_turn = cur.fetchone()['turn_pos']
+                new_turn = cur.fetchone()['turn_pos']
 
-        cur.execute(sql.set_turn, {'new_turn':new_turn, 'gameid':gameID})
+        cur.execute(sql.set_turn, {'new_turn': new_turn, 'gameid': gameID})
         global dealerID
         if get_current_playerID == dealerID:
             update_game_state(gameID, 'dealer_turn')
 
+
 def get_player_cards(gameID, playerID):
     pgID = f"{playerID}:{gameID}"
     with conn.cursor() as cur:
-        cur.execute(sql.get_player_cards, {'pgid':pgID})
+        cur.execute(sql.get_player_cards, {'pgid': pgID})
         cdictlist = cur.fetchall()
         cardlist = []
         for card in cdictlist:
             cardlist.append(Card(card['suit'], card['rank']))
-        
+
         return cardlist
+
 
 def get_player_total(gameID, playerID):
     pcards = get_player_cards(gameID, playerID)
@@ -145,11 +160,12 @@ def get_player_total(gameID, playerID):
         sum += card.value()
         if card.value() == 1:
             has_ace = True
-    
+
     if sum <= 11 and has_ace:
         sum += 10
 
     return sum
+
 
 def is_current_player(gameID, playerID):
     player_turn = get_pgid(gameID, playerID)['turn_pos']
@@ -157,19 +173,23 @@ def is_current_player(gameID, playerID):
 
     return player_turn == current_turn
 
+
 def get_first_turn(gameID):
     with conn.cursor() as cur:
-        cur.execute(sql.get_ordered_turns, {'gameid':gameID})
+        cur.execute(sql.get_ordered_turns, {'gameid': gameID})
         return cur.fetchone()['turn_pos']
+
 
 def update_game_state(gameID, game_state):
     with conn.cursor() as cur:
-        cur.execute(sql.update_game_state, {'game_state':game_state, 'gameid':gameID})
+        cur.execute(sql.update_game_state, {
+                    'game_state': game_state, 'gameid': gameID})
+
 
 def join_game(gameID, playerID, amount=0):
     pgID = f"{playerID}:{gameID}"
     with conn.cursor() as cur:
-        cur.execute(sql.get_next_turn, {'gameid':gameID})
+        cur.execute(sql.get_next_turn, {'gameid': gameID})
         pturn = 0
         if not cur.rowcount == 0:
             pturn = int(cur.fetchone()['turn_pos']) + 1
@@ -177,53 +197,65 @@ def join_game(gameID, playerID, amount=0):
         else:
             pturn = 1
 
-        cur.execute(sql.add_pgid, {'playerid':playerID, 'gameid':gameID, 'pgid':pgID, 'turn_pos':pturn, 'amount':amount})
-        cur.execute(sql.check_for_game, {'gameid':gameID})
+        cur.execute(sql.add_pgid, {'playerid': playerID, 'gameid': gameID,
+                                   'pgid': pgID, 'turn_pos': pturn,
+                                   'amount': amount})
+        cur.execute(sql.check_for_game, {'gameid': gameID})
         if cur.rowcount == 0:
-            cur.execute(sql.create_game, {'gameid':gameID})
+            cur.execute(sql.create_game, {'gameid': gameID})
+
 
 def leave_game(gameID, playerID):
     pgID = f"{playerID}:{gameID}"
     with conn.cursor() as cur:
-        cur.execute(sql.remove_pgid, {'pgid':pgID})
+        cur.execute(sql.remove_pgid, {'pgid': pgID})
         remove_empty_game(gameID)
+
 
 def leave_all(playerID):
     with conn.cursor() as cur:
-        cur.execute(sql.get_current_games, {'playerid':playerID})
+        cur.execute(sql.get_current_games, {'playerid': playerID})
         pcurgame = cur.fetchall()
-        cur.execute(sql.remove_pgid_all, {'playerid':playerID})
+        cur.execute(sql.remove_pgid_all, {'playerid': playerID})
         for gdict in pcurgame:
             remove_empty_game(gdict['gameid'])
 
+
 def remove_empty_game(gameID):
     with conn.cursor() as cur:
-        cur.execute(sql.get_game_players, {'gameid':gameID})
+        cur.execute(sql.get_game_players, {'gameid': gameID})
         if cur.rowcount == 0:
-            cur.execute(sql.remove_game, {'gameid':gameID})
+            cur.execute(sql.remove_game, {'gameid': gameID})
 
-### Blackjack Actions ###
+
+# Blackjack Actions
 def get_game_state(gameID):
     with conn.cursor() as cur:
-        cur.execute(sql.get_game_state, {'gameid':gameID})
+        cur.execute(sql.get_game_state, {'gameid': gameID})
+
 
 def get_cards_in_play(gameID):
     with conn.cursor() as cur:
-        cur.execute(sql.get_cards_in_play, {'gameid':gameID})
+        cur.execute(sql.get_cards_in_play, {'gameid': gameID})
         cards_in_play = []
         for row in cur:
             card = Card(row['suit'], row['rank'])
             cards_in_play.append(card)
         return cards_in_play
 
+
 def deal_card(gameID, playerID):
     with conn.cursor() as cur:
         card = cards.deal(get_cards_in_play(gameID))
-        cur.execute(sql.assign_card, {'pgid':f'{playerID}:{gameID}', 'suit':card.suit, 'rank':card.rank})
+        cur.execute(sql.assign_card, {
+                    'pgid': f'{playerID}:{gameID}', 'suit': card.suit,
+                    'rank': card.rank})
+
 
 def remove_game_cards(gameID):
     with conn.cursor() as cur:
-        cur.execute(sql.remove_game_cards, {'gameid':gameID})
+        cur.execute(sql.remove_game_cards, {'gameid': gameID})
+
 
 async def blackjack_action(message, channelID, playerID):
     lmsg = message.content.lstrip('b.').casefold().split()
@@ -233,7 +265,7 @@ async def blackjack_action(message, channelID, playerID):
             await message.channel.send('You are not in the game')
             return
 
-        cur.execute(sql.get_game_state, {'gameid':channelID})
+        cur.execute(sql.get_game_state, {'gameid': channelID})
         gstate = cur.fetchone()['game_state']
 
         if msg == 'bet':
@@ -251,7 +283,7 @@ async def blackjack_action(message, channelID, playerID):
         elif msg == 'start':
             if not gstate == 'pregame':
                 await message.channel.send('Game is already started')
-            
+
             else:
                 await process_start(message.channel)
 
@@ -266,6 +298,7 @@ async def blackjack_action(message, channelID, playerID):
             elif msg == 'stay':
                 await process_stay(message.channel, channelID, playerID)
 
+
 async def process_bet(msg_channel, gameID, playerID, amount):
     if amount > get_balance(playerID):
         await msg_channel.send('You do not have enough money for that bet')
@@ -273,23 +306,24 @@ async def process_bet(msg_channel, gameID, playerID, amount):
 
     pgid = f'{playerID}:{gameID}'
     with conn.cursor() as cur:
-        current_bet = cur.execute(sql.get_player_bet, {'pgid':pgid})
+        current_bet = cur.execute(sql.get_player_bet, {'pgid': pgid})
         if current_bet == 0:
-            cur.execute(sql.add_bet, {'pgid':pgid, 'amount':amount})
+            cur.execute(sql.add_bet, {'pgid': pgid, 'amount': amount})
             adjust_balance(playerID, -amount)
             await msg_channel.send(f'**Bet Placed**: ₽{amount}')
 
         else:
             await msg_channel.send(f'You already have a bet of ₽{current_bet}')
 
+
 def process_payout(gameID):
     with conn.cursor() as cur:
-        cur.execute(sql.get_result_bet, {'result':'W', 'gameid':gameID})
+        cur.execute(sql.get_result_bet, {'result': 'W', 'gameid': gameID})
         winners = {}
         for row in cur:
             winners[row['playerid']] = row['amount']
 
-        cur.execute(sql.get_result_bet, {'result':'D', 'gameid':gameID})
+        cur.execute(sql.get_result_bet, {'result': 'D', 'gameid': gameID})
         draws = {}
         for row in cur:
             draws[row['playerid']] = row['amount']
@@ -300,6 +334,7 @@ def process_payout(gameID):
         for player in draws:
             adjust_balance(player, draws[player])
 
+
 def process_winloss(gameID):
     global dealerID
     dtotal = get_player_total(gameID, dealerID)
@@ -307,30 +342,37 @@ def process_winloss(gameID):
     with conn.cursor() as cur:
         for player in players:
             ptotal = get_player_total(gameID, player)
-            
+
             if ptotal > 21:
-                cur.execute(sql.update_player_result, {'result':'L', 'playerid':player})
+                cur.execute(sql.update_player_result, {
+                            'result': 'L', 'playerid': player})
 
             elif dtotal > 21:
-                cur.execute(sql.update_player_result, {'result':'W', 'playerid':player})
+                cur.execute(sql.update_player_result, {
+                            'result': 'W', 'playerid': player})
 
             elif ptotal == dtotal:
-                cur.execute(sql.update_player_result, {'result':'D', 'playerid':player})
+                cur.execute(sql.update_player_result, {
+                            'result': 'D', 'playerid': player})
 
             elif ptotal > dtotal:
-                cur.execute(sql.update_player_result, {'result':'W', 'playerid':player})
+                cur.execute(sql.update_player_result, {
+                            'result': 'W', 'playerid': player})
 
             else:
-                cur.execute(sql.update_player_result, {'result':'L', 'playerid':player})
-                
+                cur.execute(sql.update_player_result, {
+                            'result': 'L', 'playerid': player})
+
 
 def get_players_by_result(gameID, result):
     with conn.cursor() as cur:
-        cur.execute(sql.get_result_players, {'result':result, 'gameid':gameID})
+        cur.execute(sql.get_result_players, {
+                    'result': result, 'gameid': gameID})
         plist = []
         for row in cur:
             plist.append(row['playerid'])
         return plist
+
 
 async def process_start(msg_channel):
     global dealerID
@@ -347,14 +389,17 @@ async def process_start(msg_channel):
     await display_card_table(msg_channel)
     # Get dealer amount check for 21. If dealer has 21 then end game
     if get_player_total(msg_channel.id, dealerID) == 21:
-        return # Go to finish game
+        return  # Go to finish game
 
     current_player = get_current_playerID(msg_channel.id)
-    await msg_channel.send(f"It is {mention_user(current_player)}'s turn. You have {player_cards_to_string(msg_channel.id, current_player, ' ')}")
+    await msg_channel.send(f"It is {mention_user(current_player)}'s turn. You \
+        have {player_cards_to_string(msg_channel.id, current_player, ' ')}")
+
 
 async def process_hit(msg_channel, gameID, playerID):
     deal_card(gameID, playerID)
-    await msg_channel.send(f"{get_display_name(msg_channel, playerID)} has {player_cards_to_string(msg_channel.id, playerID, ' ')}")
+    await msg_channel.send(f"{get_display_name(msg_channel, playerID)} \
+        has {player_cards_to_string(msg_channel.id, playerID, ' ')}")
 
     # Bust detect
     global dealerID
@@ -364,14 +409,19 @@ async def process_hit(msg_channel, gameID, playerID):
         if get_current_playerID(gameID) == dealerID:
             await msg_channel.send(bustmsg)
             await finish_round(msg_channel, gameID)
-        
+
         else:
             current_player = get_current_playerID(gameID)
-            await msg_channel.send(bustmsg + f"It is {mention_user(current_player)} 's turn. They have {player_cards_to_string(msg_channel.id, current_player, ' ')}")
+            await msg_channel.send(bustmsg + f"It is \
+                {mention_user(current_player)} 's turn. They have \
+                {player_cards_to_string(msg_channel.id, current_player, ' ')}")
+
 
 async def process_stay(msg_channel, gameID, playerID):
     stay_player = get_current_playerID(gameID)
-    staymsg = (f"{get_display_name(msg_channel, stay_player)} stays with {player_cards_to_string(msg_channel.id, stay_player, ' ')}\n")
+    staymsg = (
+        f"{get_display_name(msg_channel, stay_player)} stays with \
+            {player_cards_to_string(msg_channel.id, stay_player, ' ')}\n")
     progress_turn(gameID)
     if get_current_playerID(gameID) == dealerID:
         await msg_channel.send(staymsg)
@@ -379,7 +429,10 @@ async def process_stay(msg_channel, gameID, playerID):
 
     else:
         current_player = get_current_playerID(gameID)
-        await msg_channel.send(staymsg + f"It is {mention_user(current_player)} 's turn. They have {player_cards_to_string(msg_channel.id, current_player, ' ')}")
+        await msg_channel.send(staymsg + f"It is \
+            {mention_user(current_player)} 's turn. They have \
+            {player_cards_to_string(msg_channel.id, current_player, ' ')}")
+
 
 async def finish_round(msg_channel, gameID):
     global dealerID
@@ -388,7 +441,7 @@ async def finish_round(msg_channel, gameID):
     starting_cards = str(dealerhand[0]) + ', ' + str(dealerhand[1])
 
     drawn_str = ""
-    if needs_cards: 
+    if needs_cards:
         while get_player_total(gameID, dealerID) < 16:
             deal_card(gameID, dealerID)
         dealerhand = get_player_cards(gameID, dealerID)
@@ -397,16 +450,21 @@ async def finish_round(msg_channel, gameID):
         for card in drawn:
             drawn_str += str(card) + ', '
 
-    await msg_channel.send(f"It is now the dealer's turn\nThe dealer has {starting_cards}{drawn_str}\nThe dealer has {get_player_total(gameID, dealerID)}")
+    await msg_channel.send(f"It is now the dealer's turn\nThe dealer has \
+        {starting_cards}{drawn_str}\nThe dealer has \
+        {get_player_total(gameID, dealerID)}")
 
-### Displaying W/L/D in an embed ###
+# Displaying W/L/D in an embed
     process_winloss(gameID)
     leave_game(gameID, dealerID)
-    winners = await playerlist_to_display_names(msg_channel, get_players_by_result(gameID, 'W'))
-    losers = await playerlist_to_display_names(msg_channel, get_players_by_result(gameID, 'L'))
-    draws = await playerlist_to_display_names(msg_channel, get_players_by_result(gameID, 'D'))
-    
-    embed = discord.Embed(title='Hand Over' , color=0xffed66)
+    winners = await playerlist_to_display_names(
+        msg_channel, get_players_by_result(gameID, 'W'))
+    losers = await playerlist_to_display_names(
+        msg_channel, get_players_by_result(gameID, 'L'))
+    draws = await playerlist_to_display_names(
+        msg_channel, get_players_by_result(gameID, 'D'))
+
+    embed = discord.Embed(title='Hand Over', color=0xffed66)
     embed.add_field(name="Winners", value=winners, inline=True)
     embed.add_field(name="Losers", value=losers, inline=True)
     embed.add_field(name="Draws", value=draws, inline=True)
@@ -417,68 +475,82 @@ async def finish_round(msg_channel, gameID):
     set_current_turn(gameID, 0)
     update_game_state(gameID, 'pregame')
 
+
 async def display_card_table(msg_channel):
     global dealerID
-    embed = discord.Embed(title='Current hands' , color=0xFFFFF)
-    embed.add_field(name='Dealer', value=get_player_cards(msg_channel.id, dealerID)[0], inline=False)
+    embed = discord.Embed(title='Current hands', color=0xFFFFF)
+    embed.add_field(name='Dealer', value=get_player_cards(
+        msg_channel.id, dealerID)[0], inline=False)
 
     p_in_g = get_game_players(msg_channel.id)
     p_in_g.remove(dealerID)
     for player in p_in_g:
-        embed.add_field(name=get_display_name(msg_channel, player), value=cards_to_string(get_player_cards(msg_channel.id, player), '\n'), inline=True)
+        embed.add_field(
+            name=get_display_name(msg_channel, player),
+            value=cards_to_string(get_player_cards(
+                msg_channel.id, player), '\n'),
+            inline=True)
 
     await msg_channel.send(embed=embed)
 
-### Currency Actions ###
+
+# Currency Actions ###
 def create_user(playerID):
     if not check_for_user(playerID):
         with conn.cursor() as cur:
             cur.execute("""
             INSERT INTO player (playerid, money)
             VALUES(%(playerID)s, 1000)
-            """, {'playerID':playerID})
+            """, {'playerID': playerID})
             return True
+
 
 def check_for_user(playerID):
     with conn.cursor() as cur:
         cur.execute("""
-        SELECT * FROM player 
+        SELECT * FROM player
         WHERE playerid = %(playerID)s
-        """, {'playerID':playerID})
+        """, {'playerID': playerID})
         if not cur.rowcount == 0:
             return True
 
         else:
             return False
 
+
 def get_balance(playerID):
     with conn.cursor() as cur:
         cur.execute("""
-        SELECT * FROM player 
+        SELECT * FROM player
         WHERE playerid = %(playerID)s
-        """, {'playerID':playerID})
+        """, {'playerID': playerID})
 
         return cur.fetchone()['money']
 
+
 def adjust_balance(playerID, amount):
     with conn.cursor() as cur:
-        cur.execute('SELECT * FROM player WHERE playerid = %(playerID)s', {'playerID':playerID})
+        cur.execute(
+            'SELECT * FROM player WHERE playerid = %(playerID)s',
+            {'playerID': playerID})
         bal = cur.fetchone()['money']
         newbal = bal + amount
         cur.execute("""
         UPDATE player
         SET money = %(newbal)s
         WHERE playerid = %(playerID)s
-        """, {'newbal':newbal, 'playerID':playerID})
+        """, {'newbal': newbal, 'playerID': playerID})
+
 
 def exchange_money(payer, payee, amount):
     adjust_balance(payer, -amount)
     adjust_balance(payee, amount)
 
+
 async def process_pay(message):
     payer = message.author.id
     bal = get_balance(payer)
-    
+
     try:
         payee = message.mentions[0].id
         amount = int((message.content.lstrip('b.')).split()[2])
@@ -490,32 +562,37 @@ async def process_pay(message):
         return
 
     if not check_for_user(payee):
-        await message.channel.send("User does not exist in the bank, tell them to type `b. ubi`")
+        await message.channel.send("User does not exist in the bank, tell them \
+            to type `b. ubi`")
         return
 
     elif bal < 10000 or bal < amount:
-        await message.channel.send("You either do not have enough to pay or have less than 10,000")
-        return 
+        await message.channel.send("You either do not have enough to pay or \
+             have less than 10,000")
+        return
 
     exchange_money(payer, payee, amount)
 
     embed = discord.Embed(title='₽ *bnbank* ₽', color=0x008c15)
-    embedplayers = f'\n**{get_display_name(message.channel, payer)}**\n**{get_display_name(message.channel, payee)}**'
+    embedplayers = f'\n**{get_display_name(message.channel, payer)}**\n\
+        **{get_display_name(message.channel, payee)}**'
     embedamounts = f'{get_balance(payer)}\n{get_balance(payee)}'
     embed.add_field(name='Account', value=embedplayers, inline=True)
     embed.add_field(name='₽', value=embedamounts, inline=True)
     embed.set_footer(text=f"Transaction amount: ₽ {amount}")
     await message.channel.send(embed=embed)
 
-@client.event
+
+@ client.event
 async def on_ready():
     print('We have logged in as {0.user}'.format(client))
     global dealerID
     dealerID = client.user.id
 
-bj_commands = ['start','hit','stay','bet']
+bj_commands = ['start', 'hit', 'stay', 'bet']
 
-@client.event
+
+@ client.event
 async def on_message(message):
     if message.author == client.user:
         return
@@ -523,7 +600,7 @@ async def on_message(message):
     if message.content.startswith('whome'):
         await message.channel.send(mention_user(message.author.id))
 
-    ### Gambling Commands ###
+    # Gambling Commands
     if message.content.startswith('b.'):
         msg = message.content.lstrip('b.').casefold()
         msg = msg.split()[0]
@@ -531,12 +608,12 @@ async def on_message(message):
         playerID = message.author.id
 
         if msg in bj_commands:
-           await blackjack_action(message, channelID, playerID)
+            await blackjack_action(message, channelID, playerID)
 
         elif msg == 'players':
             await message.channel.send(get_players(message.channel))
 
-        ## Player to game ##
+        # Player to game
         elif msg == 'join':
             if not player_in_game(channelID, playerID):
                 join_game(channelID, playerID)
@@ -548,7 +625,8 @@ async def on_message(message):
         elif msg == 'leave':
             if player_in_game(channelID, playerID):
                 leave_game(channelID, playerID)
-                await message.channel.send(f'{message.author.display_name} Left game')
+                await message.channel.send(f'{message.author.display_name} \
+                    Left game')
 
             else:
                 await message.channel.send('You are not in this game')
@@ -557,33 +635,37 @@ async def on_message(message):
             leave_all(playerID)
             await message.channel.send('All games left')
 
-        ## Player to money ##
+        # Player to money
         elif msg == 'bal':
             if check_for_user(playerID):
                 await message.channel.send(f'You have {get_balance(playerID)}')
 
             else:
                 create_user(playerID)
-                await message.channel.send('User created, you have been given 1000 Dollars.')
+                await message.channel.send('User created, you have been given \
+                    1000 Dollars.')
 
         elif msg == 'ubi':
             if check_for_user(playerID):
                 if get_balance(playerID) < 100:
                     adjust_balance(playerID, 100)
-                    await message.channel.send('You have been given 100 Dollars. Commie.')
+                    await message.channel.send('You have been given 100 \
+                        Dollars. Commie.')
 
                 else:
-                    await message.channel.send('You have too much money to recieve ubi')    
+                    await message.channel.send('You have too much money to \
+                        recieve ubi')
 
             else:
                 create_user(playerID)
-                await message.channel.send('User created, you have been given 1000 Dollars.')
+                await message.channel.send('User created, you have been given \
+                    1000 Dollars.')
 
         # b. pay (user to be paid) (amount to be paid)
         elif msg == 'pay':
             await process_pay(message)
 
-        ## Debug ##
+        # Debug
         elif msg == 'help':
             await message.channel.send('contact <@83794466820849664>')
 
@@ -596,9 +678,9 @@ async def on_message(message):
                     deal_card(1234, random.choice(ids))
                     i += 1
 
-                cur.execute(sql.remove_game_cards, {'gameid':1234})
+                cur.execute(sql.remove_game_cards, {'gameid': 1234})
                 cur.execute("DELETE FROM player_game WHERE gameid = 1234")
-                cur.execute(sql.remove_game, {'gameid':1234})
+                cur.execute(sql.remove_game, {'gameid': 1234})
                 await message.channel.send('cf.')
 
         elif msg == 'w' and playerID == 83794466820849664:
@@ -607,7 +689,7 @@ async def on_message(message):
                 cur.execute("delete from card")
                 cur.execute("delete from player_game")
                 await message.channel.send('wipe.')
-        
+
         else:
             await message.channel.send('Invalid command')
 

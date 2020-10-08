@@ -3,11 +3,12 @@ import random
 suit = ['S', 'C', 'H', 'D']
 rank = ['A', '2', '3', '4', '5', '6', '7', '8', '9', '10', 'J', 'Q', 'K']
 
+
 class Card:
     def __init__(self, suit, rank):
         self.suit = suit
         self.rank = rank
-    
+
     def __str__(self):
         suit_symbol = '?'
 
@@ -38,12 +39,13 @@ class Card:
     def value(self):
         if self.rank.isnumeric():
             return int(self.rank)
-        
+
         elif self.rank == 'A':
             return 1
 
         else:
             return 10
+
 
 def remove_cards(cards_in_play):
     cdeck = [Card(s, r) for r in rank for s in suit]
@@ -52,6 +54,7 @@ def remove_cards(cards_in_play):
             cdeck.remove(card)
 
     return cdeck
+
 
 def deal(cards_in_play):
     cdeck = remove_cards(cards_in_play)
