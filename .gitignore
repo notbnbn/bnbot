@@ -5,6 +5,7 @@ bnbot/__pycache__/
 *$py.class
 .vscode/
 bnbot/properties.yml
+docker-compose.yml
 
 # C extensions
 *.so

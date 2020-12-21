@@ -1,27 +1,25 @@
+import os
 import discord
 import bnbot.cards as cards
 from bnbot.cards import Card
 import bnbot.schema as sql
-import yaml
 import psycopg2
 import psycopg2.extras
 import random
 
-properties = yaml.load(open('bnbot/properties.yml'), Loader=yaml.FullLoader)
-token = properties.get('token')
+token = os.getenv('BN_TOKEN', '0')
 intents = discord.Intents.default()
 intents.members = True
 client = discord.Client(intents=intents)
 dealerID = 0
 
 # Connection to postgresql #
-pg_prop = properties.get('postgres')
 try:
-    conn = psycopg2.connect(dbname=pg_prop.get('dbname'),
-                            user=pg_prop.get('user'),
-                            password=pg_prop.get('password'),
-                            host=pg_prop.get('host'),
-                            port=pg_prop.get('port'),
+    conn = psycopg2.connect(dbname=os.getenv('PG_DBNAME'),
+                            user=os.getenv('PG_DBUSER'),
+                            password=os.getenv('PG_DBPASSWORD'),
+                            host=os.getenv('PG_DBHOST'),
+                            port=os.getenv('PG_DBPORT'),
                             cursor_factory=psycopg2.extras.RealDictCursor)
     conn.autocommit = True
 
