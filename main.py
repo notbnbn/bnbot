@@ -398,7 +398,7 @@ async def process_start(msg_channel):
 async def process_hit(msg_channel, gameID, playerID):
     deal_card(gameID, playerID)
     await msg_channel.send(f"{get_display_name(msg_channel, playerID)} \
-        has {player_cards_to_string(msg_channel.id, playerID, ' ')}")
+    has {player_cards_to_string(msg_channel.id, playerID, ' ')}")
 
     # Bust detect
     global dealerID
@@ -412,15 +412,15 @@ async def process_hit(msg_channel, gameID, playerID):
         else:
             current_player = get_current_playerID(gameID)
             await msg_channel.send(bustmsg + f"It is \
-                {mention_user(current_player)} 's turn. They have \
-                {player_cards_to_string(msg_channel.id, current_player, ' ')}")
+            {mention_user(current_player)} 's turn. They have \
+            {player_cards_to_string(msg_channel.id, current_player, ' ')}")
 
 
 async def process_stay(msg_channel, gameID, playerID):
     stay_player = get_current_playerID(gameID)
     staymsg = (
         f"{get_display_name(msg_channel, stay_player)} stays with \
-            {player_cards_to_string(msg_channel.id, stay_player, ' ')}\n")
+        {player_cards_to_string(msg_channel.id, stay_player, ' ')}\n")
     progress_turn(gameID)
     if get_current_playerID(gameID) == dealerID:
         await msg_channel.send(staymsg)
@@ -429,8 +429,8 @@ async def process_stay(msg_channel, gameID, playerID):
     else:
         current_player = get_current_playerID(gameID)
         await msg_channel.send(staymsg + f"It is \
-            {mention_user(current_player)} 's turn. They have \
-            {player_cards_to_string(msg_channel.id, current_player, ' ')}")
+        {mention_user(current_player)} 's turn. They have \
+        {player_cards_to_string(msg_channel.id, current_player, ' ')}")
 
 
 async def finish_round(msg_channel, gameID):
@@ -450,8 +450,8 @@ async def finish_round(msg_channel, gameID):
             drawn_str += str(card) + ', '
 
     await msg_channel.send(f"It is now the dealer's turn\nThe dealer has \
-        {starting_cards}{drawn_str}\nThe dealer has \
-        {get_player_total(gameID, dealerID)}")
+    {starting_cards}{drawn_str}\nThe dealer has \
+    {get_player_total(gameID, dealerID)}")
 
 # Displaying W/L/D in an embed
     process_winloss(gameID)
@@ -562,12 +562,12 @@ async def process_pay(message):
 
     if not check_for_user(payee):
         await message.channel.send("User does not exist in the bank, tell them \
-            to type `b. ubi`")
+        to type `b. ubi`")
         return
 
     elif bal < 10000 or bal < amount:
         await message.channel.send("You either do not have enough to pay or \
-             have less than 10,000")
+        have less than 10,000")
         return
 
     exchange_money(payer, payee, amount)
@@ -625,7 +625,7 @@ async def on_message(message):
             if player_in_game(channelID, playerID):
                 leave_game(channelID, playerID)
                 await message.channel.send(f'{message.author.display_name} \
-                    Left game')
+                Left game')
 
             else:
                 await message.channel.send('You are not in this game')
@@ -642,23 +642,23 @@ async def on_message(message):
             else:
                 create_user(playerID)
                 await message.channel.send('User created, you have been given \
-                    1000 Dollars.')
+                1000 Dollars.')
 
         elif msg == 'ubi':
             if check_for_user(playerID):
                 if get_balance(playerID) < 100:
                     adjust_balance(playerID, 100)
                     await message.channel.send('You have been given 100 \
-                        Dollars. Commie.')
+                    Dollars. Commie.')
 
                 else:
                     await message.channel.send('You have too much money to \
-                        recieve ubi')
+                    recieve ubi')
 
             else:
                 create_user(playerID)
                 await message.channel.send('User created, you have been given \
-                    1000 Dollars.')
+                1000 Dollars.')
 
         # b. pay (user to be paid) (amount to be paid)
         elif msg == 'pay':
