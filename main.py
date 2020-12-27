@@ -391,14 +391,17 @@ async def process_start(msg_channel):
 
     else:
         current_player = get_current_playerID(msg_channel.id)
-        await msg_channel.send(f"It is {mention_user(current_player)}'s turn. You \
-        have {player_cards_to_string(msg_channel.id, current_player, ' ')}")
+        start_cards = player_cards_to_string(
+            msg_channel.id, current_player, ' ')
+        await msg_channel.send(f"It is {mention_user(current_player)}'s turn. "
+                               f"You have {start_cards}")
 
 
 async def process_hit(msg_channel, gameID, playerID):
     deal_card(gameID, playerID)
-    await msg_channel.send(f"{get_display_name(msg_channel, playerID)} \
-    has {player_cards_to_string(msg_channel.id, playerID, ' ')}")
+    player_cards = player_cards_to_string(msg_channel.id, playerID, ' ')
+    await msg_channel.send(f"{get_display_name(msg_channel, playerID)} has "
+                           f"{player_cards}")
 
     # Bust detect
     global dealerID
@@ -411,16 +414,18 @@ async def process_hit(msg_channel, gameID, playerID):
 
         else:
             current_player = get_current_playerID(gameID)
-            await msg_channel.send(bustmsg + f"It is \
-            {mention_user(current_player)} 's turn. They have \
-            {player_cards_to_string(msg_channel.id, current_player, ' ')}")
+            start_cards = player_cards_to_string(
+                msg_channel.id, current_player, ' ')
+            await msg_channel.send(bustmsg + "It is "
+                                   f"{mention_user(current_player)} 's turn."
+                                   f"They have {start_cards}")
 
 
 async def process_stay(msg_channel, gameID, playerID):
     stay_player = get_current_playerID(gameID)
     staymsg = (
-        f"{get_display_name(msg_channel, stay_player)} stays with \
-        {player_cards_to_string(msg_channel.id, stay_player, ' ')}\n")
+        f"{get_display_name(msg_channel, stay_player)} stays with "
+        f"{player_cards_to_string(msg_channel.id, stay_player, ' ')}\n")
     progress_turn(gameID)
     if get_current_playerID(gameID) == dealerID:
         await msg_channel.send(staymsg)
@@ -428,9 +433,11 @@ async def process_stay(msg_channel, gameID, playerID):
 
     else:
         current_player = get_current_playerID(gameID)
-        await msg_channel.send(staymsg + f"It is \
-        {mention_user(current_player)} 's turn. They have \
-        {player_cards_to_string(msg_channel.id, current_player, ' ')}")
+        start_cards = player_cards_to_string(
+            msg_channel.id, current_player, ' ')
+        await msg_channel.send(staymsg + "It is "
+                               f"{mention_user(current_player)} 's turn. "
+                               f"They have {start_cards}")
 
 
 async def finish_round(msg_channel, gameID):
@@ -449,9 +456,9 @@ async def finish_round(msg_channel, gameID):
         for card in drawn:
             drawn_str += str(card) + ', '
 
-    await msg_channel.send(f"It is now the dealer's turn\nThe dealer has \
-    {starting_cards}{drawn_str}\nThe dealer has \
-    {get_player_total(gameID, dealerID)}")
+    await msg_channel.send("It is now the dealer's turn\nThe dealer has "
+                           f"{starting_cards}{drawn_str}\nThe dealer has "
+                           f"{get_player_total(gameID, dealerID)}")
 
 # Displaying W/L/D in an embed
     process_winloss(gameID)
@@ -561,13 +568,13 @@ async def process_pay(message):
         return
 
     if not check_for_user(payee):
-        await message.channel.send("User does not exist in the bank, tell them \
-        to type `b. ubi`")
+        await message.channel.send("User does not exist in the bank, tell them"
+                                   " to type `b. ubi`")
         return
 
     elif bal < 10000 or bal < amount:
-        await message.channel.send("You either do not have enough to pay or \
-        have less than 10,000")
+        await message.channel.send("You either do not have enough to pay or"
+                                   " have less than 10, 000")
         return
 
     exchange_money(payer, payee, amount)
@@ -624,8 +631,8 @@ async def on_message(message):
         elif msg == 'leave':
             if player_in_game(channelID, playerID):
                 leave_game(channelID, playerID)
-                await message.channel.send(f'{message.author.display_name} \
-                Left game')
+                await message.channel.send(f'{message.author.display_name}'
+                                           ' left game')
 
             else:
                 await message.channel.send('You are not in this game')
@@ -641,8 +648,8 @@ async def on_message(message):
 
             else:
                 create_user(playerID)
-                await message.channel.send('User created, you have been given \
-                1000 Dollars.')
+                await message.channel.send('User created, you have been given'
+                                           ' 1000 Dollars.')
 
         elif msg == 'ubi':
             if check_for_user(playerID):
