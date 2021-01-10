@@ -675,6 +675,9 @@ async def on_message(message):
         elif msg == 'help':
             await message.channel.send('contact <@83794466820849664>')
 
+        elif msg == 'test':
+            await message.channel.send('Test')
+
         elif msg == 'cf' and playerID == 83794466820849664:
             with conn.cursor() as cur:
                 ids = [1000, 2000, 3000]
