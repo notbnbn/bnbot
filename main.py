@@ -598,6 +598,7 @@ async def on_ready():
 bj_commands = ['start', 'hit', 'stay', 'bet']
 
 
+@ client.event
 async def on_voice_state_update(data):
     userid = data['user_id']
     print(userid)
