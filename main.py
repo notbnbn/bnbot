@@ -598,6 +598,11 @@ async def on_ready():
 bj_commands = ['start', 'hit', 'stay', 'bet']
 
 
+async def on_voice_state_update(data):
+    userid = data['user_id']
+    print(userid)
+
+
 @ client.event
 async def on_message(message):
     if message.author == client.user:
